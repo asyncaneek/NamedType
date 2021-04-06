@@ -39,28 +39,38 @@
 #endif
 
 #if defined(__clang__) || defined(__GNUC__)
-#   define IGNORE_SHOULD_RETURN_REFERENCE_TO_THIS_BEGIN                                                                \
-    _Pragma("GCC diagnostic push") _Pragma("GCC diagnostic ignored \"-Weffc++\"")
-#   define IGNORE_SHOULD_RETURN_REFERENCE_TO_THIS_END _Pragma("GCC diagnostic pop")
+#    define IGNORE_SHOULD_RETURN_REFERENCE_TO_THIS_BEGIN                                                               \
+        _Pragma("GCC diagnostic push") _Pragma("GCC diagnostic ignored \"-Weffc++\"")
+#    define IGNORE_SHOULD_RETURN_REFERENCE_TO_THIS_END _Pragma("GCC diagnostic pop")
 #else
-#   define IGNORE_SHOULD_RETURN_REFERENCE_TO_THIS_BEGIN /* Nothing */
-#   define IGNORE_SHOULD_RETURN_REFERENCE_TO_THIS_END   /* Nothing */
+#    define IGNORE_SHOULD_RETURN_REFERENCE_TO_THIS_BEGIN /* Nothing */
+#    define IGNORE_SHOULD_RETURN_REFERENCE_TO_THIS_END   /* Nothing */
 #endif
 
 namespace fluent
 {
+struct _IsNamedType
+{
+};
+template <typename _NamedType>
+constexpr bool IsNamedType()
+{
+    return std::is_base_of<_IsNamedType, _NamedType>();
+}
 
 template <typename T>
 using IsNotReference = typename std::enable_if<!std::is_reference<T>::value, void>::type;
 
 template <typename T, typename Parameter, template <typename> class... Skills>
-class FLUENT_EBCO NamedType : public Skills<NamedType<T, Parameter, Skills...>>...
+class FLUENT_EBCO NamedType
+    : public _IsNamedType
+    , public Skills<NamedType<T, Parameter, Skills...>>...
 {
 public:
     using UnderlyingType = T;
 
     // constructor
-    NamedType()  = default;
+    NamedType() = default;
 
     explicit constexpr NamedType(T const& value) noexcept(std::is_nothrow_copy_constructible<T>::value) : value_(value)
     {
@@ -92,14 +102,14 @@ public:
 
     struct argument
     {
-       NamedType operator=(T&& value) const
-       {
-           IGNORE_SHOULD_RETURN_REFERENCE_TO_THIS_BEGIN
+        NamedType operator=(T&& value) const
+        {
+            IGNORE_SHOULD_RETURN_REFERENCE_TO_THIS_BEGIN
 
-           return NamedType(std::forward<T>(value));
+            return NamedType(std::forward<T>(value));
 
-           IGNORE_SHOULD_RETURN_REFERENCE_TO_THIS_END
-       }
+            IGNORE_SHOULD_RETURN_REFERENCE_TO_THIS_END
+        }
         template <typename U>
         NamedType operator=(U&& value) const
         {
@@ -127,25 +137,27 @@ constexpr StrongType<T> make_named(T const& value)
     return StrongType<T>(value);
 }
 
-namespace details {
+namespace details
+{
 template <class F, class... Ts>
-struct AnyOrderCallable{
-   F f;
-   template <class... Us>
-   auto operator()(Us&&...args) const
-   {
-       static_assert(sizeof...(Ts) == sizeof...(Us), "Passing wrong number of arguments");
-       auto x = std::make_tuple(std::forward<Us>(args)...);
-       return f(std::move(std::get<Ts>(x))...);
-   }
+struct AnyOrderCallable
+{
+    F f;
+    template <class... Us>
+    auto operator()(Us&&... args) const
+    {
+        static_assert(sizeof...(Ts) == sizeof...(Us), "Passing wrong number of arguments");
+        auto x = std::make_tuple(std::forward<Us>(args)...);
+        return f(std::move(std::get<Ts>(x))...);
+    }
 };
-} //namespace details
+} // namespace details
 
 // EXPERIMENTAL - CAN BE CHANGED IN THE FUTURE. FEEDBACK WELCOME FOR IMPROVEMENTS!
 template <class... Args, class F>
 auto make_named_arg_function(F&& f)
 {
-   return details::AnyOrderCallable<F, Args...>{std::forward<F>(f)};
+    return details::AnyOrderCallable<F, Args...>{std::forward<F>(f)};
 }
 } // namespace fluent
 
