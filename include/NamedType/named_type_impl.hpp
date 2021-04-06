@@ -63,7 +63,7 @@ using IsNotReference = typename std::enable_if<!std::is_reference<T>::value, voi
 
 template <typename T, typename Parameter, template <typename> class... Skills>
 class FLUENT_EBCO NamedType
-    : public _IsNamedType
+    : private _IsNamedType
     , public Skills<NamedType<T, Parameter, Skills...>>...    
 {
 public:
