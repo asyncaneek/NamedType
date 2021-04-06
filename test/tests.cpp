@@ -1093,3 +1093,10 @@ TEST_CASE("PostDecrementable constexpr C++17")
     static_assert( (StrongInt{1}--).get() == 1, "PostDecrementable is not constexpr");
 }
 #endif
+
+TEST_CASE("compile time check type is of NamedType")
+{
+    using StrongInt = fluent::NamedType<int, struct StrongIntTag>;
+
+    REQUIRE(fluent::IsNamedType<StrongInt>());
+}
