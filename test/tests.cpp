@@ -268,7 +268,6 @@ TEST_CASE("UnarySubtractable constexpr")
     static_assert((-s).get() == -12, "UnarySubtractable is not constexpr");
 }
 
-
 TEST_CASE("Multiplicable")
 {
     using MultiplicableType = fluent::NamedType<int, struct MultiplicableTag, fluent::Multiplicable>;
@@ -963,6 +962,14 @@ TEST_CASE("Arithmetic")
 
     a /= b;
     CHECK(a.get() == 5);
+
+    b = ++a;
+    CHECK(a.get() == 6);
+    CHECK(b.get() == 6);
+
+    b = a++;
+    CHECK(a.get() == 7);
+    CHECK(b.get() == 6);
 }
 
 TEST_CASE("Version macros are defined")
@@ -1094,9 +1101,75 @@ TEST_CASE("PostDecrementable constexpr C++17")
 }
 #endif
 
-TEST_CASE("compile time check type is of NamedType")
+TEST_CASE("Incrementable")
 {
-    using StrongInt = fluent::NamedType<int, struct StrongIntTag>;
+    using StrongInt = fluent::NamedType<int, struct StrongIntTag, fluent::Incrementable>;
+    {
+        StrongInt a{1};
+        StrongInt b = ++a;
+        CHECK( a.get() == 2 );
+        CHECK( b.get() == 2 );
+    }
+    {
+        StrongInt a{1};
+        StrongInt b = a++;
+        CHECK( a.get() == 2 );
+        CHECK( b.get() == 1 );
+    }
+}
 
-    REQUIRE(fluent::IsNamedType<StrongInt>());
+TEST_CASE("Decrementable")
+{
+    using StrongInt = fluent::NamedType<int, struct StrongIntTag, fluent::Decrementable>;
+    {
+        StrongInt a{1};
+        StrongInt b = --a;
+        CHECK( a.get() == 0 );
+        CHECK( b.get() == 0 );
+    }
+    {
+        StrongInt a{1};
+        StrongInt b = a--;
+        CHECK( a.get() == 0 );
+        CHECK( b.get() == 1 );
+    }
+}
+
+template <template <typename> class... Skills>
+using SkilledType = fluent::NamedType<int, struct SkilledTypeTag, Skills...>;
+
+TEST_CASE("Empty base class optimisation of skills")
+{
+    CHECK(sizeof(int) == sizeof(SkilledType<fluent::PreIncrementable>));
+    CHECK(sizeof(int) == sizeof(SkilledType<fluent::PostIncrementable>));
+    CHECK(sizeof(int) == sizeof(SkilledType<fluent::PreDecrementable>));
+    CHECK(sizeof(int) == sizeof(SkilledType<fluent::PostDecrementable>));
+    CHECK(sizeof(int) == sizeof(SkilledType<fluent::BinaryAddable>));
+    CHECK(sizeof(int) == sizeof(SkilledType<fluent::UnaryAddable>));
+    CHECK(sizeof(int) == sizeof(SkilledType<fluent::Addable>));
+    CHECK(sizeof(int) == sizeof(SkilledType<fluent::BinarySubtractable>));
+    CHECK(sizeof(int) == sizeof(SkilledType<fluent::UnarySubtractable>));
+    CHECK(sizeof(int) == sizeof(SkilledType<fluent::Subtractable>));
+    CHECK(sizeof(int) == sizeof(SkilledType<fluent::Multiplicable>));
+    CHECK(sizeof(int) == sizeof(SkilledType<fluent::Divisible>));
+    CHECK(sizeof(int) == sizeof(SkilledType<fluent::Modulable>));
+    CHECK(sizeof(int) == sizeof(SkilledType<fluent::BitWiseInvertable>));
+    CHECK(sizeof(int) == sizeof(SkilledType<fluent::BitWiseAndable>));
+    CHECK(sizeof(int) == sizeof(SkilledType<fluent::BitWiseOrable>));
+    CHECK(sizeof(int) == sizeof(SkilledType<fluent::BitWiseXorable>));
+    CHECK(sizeof(int) == sizeof(SkilledType<fluent::BitWiseLeftShiftable>));
+    CHECK(sizeof(int) == sizeof(SkilledType<fluent::BitWiseRightShiftable>));
+    CHECK(sizeof(int) == sizeof(SkilledType<fluent::Comparable>));
+    CHECK(sizeof(int) == sizeof(SkilledType<fluent::Dereferencable>));
+    CHECK(sizeof(int) == sizeof(SkilledType<fluent::ImplicitlyConvertibleTo>));
+    CHECK(sizeof(int) == sizeof(SkilledType<fluent::Printable>));
+    CHECK(sizeof(int) == sizeof(SkilledType<fluent::Hashable>));
+    CHECK(sizeof(int) == sizeof(SkilledType<fluent::FunctionCallable>));
+    CHECK(sizeof(int) == sizeof(SkilledType<fluent::MethodCallable>));
+    CHECK(sizeof(int) == sizeof(SkilledType<fluent::Callable>));
+    CHECK(sizeof(int) == sizeof(SkilledType<fluent::Incrementable>));
+    CHECK(sizeof(int) == sizeof(SkilledType<fluent::Decrementable>));
+    CHECK(sizeof(int) == sizeof(SkilledType<fluent::Arithmetic>));
+    CHECK(sizeof(int) == sizeof(SkilledType<fluent::PreIncrementable>));
+    CHECK(sizeof(int) == sizeof(SkilledType<fluent::PreIncrementable>));
 }

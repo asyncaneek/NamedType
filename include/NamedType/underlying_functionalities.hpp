@@ -99,7 +99,9 @@ struct UnaryAddable : crtp<T, UnaryAddable>
 };
 
 template <typename T>
-struct Addable : BinaryAddable<T>, UnaryAddable<T>
+struct FLUENT_EBCO Addable
+    : BinaryAddable<T>
+    , UnaryAddable<T>
 {
     using BinaryAddable<T>::operator+;
     using UnaryAddable<T>::operator+;
@@ -118,7 +120,7 @@ struct BinarySubtractable : crtp<T, BinarySubtractable>
         return this->underlying();
     }
 };
-   
+
 template <typename T>
 struct UnarySubtractable : crtp<T, UnarySubtractable>
 {
@@ -127,14 +129,16 @@ struct UnarySubtractable : crtp<T, UnarySubtractable>
         return T(-this->underlying().get());
     }
 };
-   
+
 template <typename T>
-struct Subtractable : BinarySubtractable<T>, UnarySubtractable<T>
+struct FLUENT_EBCO Subtractable
+    : BinarySubtractable<T>
+    , UnarySubtractable<T>
 {
     using UnarySubtractable<T>::operator-;
     using BinarySubtractable<T>::operator-;
 };
-   
+
 template <typename T>
 struct Multiplicable : crtp<T, Multiplicable>
 {
@@ -259,36 +263,27 @@ struct BitWiseRightShiftable : crtp<T, BitWiseRightShiftable>
 template <typename T>
 struct Comparable : crtp<T, Comparable>
 {
-    FLUENT_NODISCARD constexpr bool operator<(T const& other) const
+    FLUENT_NODISCARD constexpr bool operator<(Comparable<T> const& other) const
     {
-        return this->underlying().get() < other.get();
+        return this->underlying().get() < other.underlying().get();
     }
-    FLUENT_NODISCARD constexpr bool operator>(T const& other) const
+    FLUENT_NODISCARD constexpr bool operator>(Comparable<T> const& other) const
     {
-        return other.get() < this->underlying().get();
+        return other.underlying().get() < this->underlying().get();
     }
-    FLUENT_NODISCARD constexpr bool operator<=(T const& other) const
+    FLUENT_NODISCARD constexpr bool operator<=(Comparable<T> const& other) const
     {
-        return !(other.get() < this->underlying().get());
+        return !(other < *this);
     }
-    FLUENT_NODISCARD constexpr bool operator>=(T const& other) const
+    FLUENT_NODISCARD constexpr bool operator>=(Comparable<T> const& other) const
     {
         return !(*this < other);
     }
-// On Visual Studio before 19.22, you cannot define constexpr with friend function
-// See: https://stackoverflow.com/a/60400110
-#if defined(_MSC_VER) && _MSC_VER < 1922
-    FLUENT_NODISCARD constexpr bool operator==(T const& other) const
+    FLUENT_NODISCARD constexpr bool operator==(Comparable<T> const& other) const
     {
-        return !(*this < other) && !(other.get() < this->underlying().get());
+        return !(*this < other) && !(other < *this);
     }
-#else
-    FLUENT_NODISCARD friend constexpr bool operator==(Comparable<T> const& self, T const& other)
-    {
-        return !(self < other) && !(other.get() < self.underlying().get());
-    }
-#endif
-    FLUENT_NODISCARD constexpr bool operator!=(T const& other) const
+    FLUENT_NODISCARD constexpr bool operator!=(Comparable<T> const& other) const
     {
         return !(*this == other);
     }
@@ -383,18 +378,34 @@ struct MethodCallable<NamedType<T, Parameter, Skills...>> : crtp<NamedType<T, Pa
 };
 
 template <typename NamedType_>
-struct Callable
+struct FLUENT_EBCO Callable
     : FunctionCallable<NamedType_>
     , MethodCallable<NamedType_>
 {
 };
 
 template <typename T>
-struct Arithmetic
+struct FLUENT_EBCO Incrementable
     : PreIncrementable<T>
     , PostIncrementable<T>
-    , PreDecrementable<T>
+{
+    using PostIncrementable<T>::operator++;
+    using PreIncrementable<T>::operator++;
+};
+
+template <typename T>
+struct FLUENT_EBCO Decrementable
+    : PreDecrementable<T>
     , PostDecrementable<T>
+{
+    using PostDecrementable<T>::operator--;
+    using PreDecrementable<T>::operator--;
+};
+
+template <typename T>
+struct FLUENT_EBCO Arithmetic
+    : Incrementable<T>
+    , Decrementable<T>
     , Addable<T>
     , Subtractable<T>
     , Multiplicable<T>
